@@ -5,7 +5,7 @@
   <title>Generator Sertifikat</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Great Vibes Font -->
+  <!-- Font Great Vibes -->
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet" />
 
   <!-- SheetJS -->
@@ -32,45 +32,39 @@
       position: relative;
       display: none;
     }
-    button {
-      margin-top: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
-    }
     canvas {
       display: none;
     }
   </style>
 </head>
 <body>
+
   <h2>🎓 Upload Excel Nama Sertifikat</h2>
   <input type="file" id="uploadExcel" accept=".xlsx, .xls" />
   <br /><br />
-  <button onclick="generate()">Tampilkan Contoh</button>
 
-<div id="sertifikat">
-  <!-- Wrapper flex sesuai posisi dan ukuran Canva -->
-  <div style="
-    position: absolute;
-    top: 188px;
-    left: 260px;
-    width: 480px;
-    height: 73px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  ">
-    <span id="nama" style="
-      font-family: 'Great Vibes', cursive;
-      font-size: 52px;
-      color: black;
-      white-space: nowrap;
-    ">Hanung Brahmantyo</span>
-  </div>
-</div>
-
-  <br />
+  <button onclick="generatePreview()">Tampilkan Contoh</button>
   <button onclick="downloadZIP()">Download Semua PDF (ZIP)</button>
+
+  <div id="sertifikat">
+    <div style="
+      position: absolute;
+      top: 188px;
+      left: 260px;
+      width: 480px;
+      height: 73px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    ">
+      <span id="nama" style="
+        font-family: 'Great Vibes', cursive;
+        font-size: 52px;
+        color: black;
+        white-space: nowrap;
+      ">Nama Lengkap</span>
+    </div>
+  </div>
 
   <script>
     let namaList = [];
@@ -89,7 +83,7 @@
       reader.readAsArrayBuffer(e.target.files[0]);
     });
 
-    function generate() {
+    function generatePreview() {
       if (namaList.length === 0) {
         alert("Upload file Excel dulu ya!");
         return;
@@ -98,49 +92,79 @@
       document.getElementById("sertifikat").style.display = "block";
     }
 
-    async function downloadZIP() {
-      if (namaList.length === 0) {
-        alert("Belum ada data nama!");
-        return;
-      }
+   async function downloadZIP() {
+  if (namaList.length === 0) {
+    alert("Belum ada data nama!");
+    return;
+  }
 
-      const { jsPDF } = window.jspdf;
-      const zip = new JSZip();
+  // Buat loading text
+  const loadingDiv = document.createElement("div");
+  loadingDiv.id = "loading";
+  loadingDiv.style.position = "fixed";
+  loadingDiv.style.top = "50%";
+  loadingDiv.style.left = "50%";
+  loadingDiv.style.transform = "translate(-50%, -50%)";
+  loadingDiv.style.background = "rgba(0,0,0,0.8)";
+  loadingDiv.style.color = "#fff";
+  loadingDiv.style.padding = "20px";
+  loadingDiv.style.borderRadius = "10px";
+  loadingDiv.style.zIndex = "9999";
+  loadingDiv.style.fontSize = "18px";
+  loadingDiv.textContent = "Memulai proses...";
+  document.body.appendChild(loadingDiv);
 
-      for (let i = 0; i < namaList.length; i++) {
-        const namaPeserta = namaList[i];
-        document.getElementById("nama").textContent = namaPeserta;
-        document.getElementById("sertifikat").style.display = "block";
+  const { jsPDF } = window.jspdf;
+  const zip = new JSZip();
 
-        await new Promise(resolve => setTimeout(resolve, 500));
+  for (let i = 0; i < namaList.length; i++) {
+    const namaPeserta = namaList[i];
+    
+    loadingDiv.textContent = `Sedang memproses sertifikat ${i+1} dari ${namaList.length}...\n${namaPeserta}`;
 
-        const canvas = await html2canvas(document.getElementById("sertifikat"), {
-          scale: 2,
-          useCORS: true
-        });
+    document.getElementById("nama").textContent = namaPeserta;
+    document.getElementById("sertifikat").style.display = "block";
 
-        const imgData = canvas.toDataURL("image/png");
+    await new Promise(resolve => setTimeout(resolve, 500)); // tunggu render
 
-        const pdf = new jsPDF({
-          orientation: "landscape",
-          unit: "px",
-          format: [1000, 700]
-        });
+    const canvas = await html2canvas(document.getElementById("sertifikat"), {
+      scale: 2,
+      useCORS: true
+    });
 
-        pdf.addImage(imgData, "PNG", 0, 0, 1000, 700);
+    const imgData = canvas.toDataURL("image/png");
 
-        const pdfArray = pdf.output("arraybuffer");
-        zip.file(`Sertifikat_${namaPeserta}.pdf`, pdfArray);
-      }
+    const pdf = new jsPDF({
+      orientation: "landscape",
+      unit: "px",
+      format: [1000, 700]
+    });
 
-      zip.generateAsync({ type: "blob" }).then(function (content) {
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(content);
-        link.download = "Semua_Sertifikat.zip";
-        link.click();
-        alert("Semua sertifikat berhasil di-download dalam ZIP!");
-      });
-    }
+    pdf.addImage(imgData, "PNG", 0, 0, 1000, 700);
+    
+    const pdfBlob = pdf.output("blob");
+    zip.file(`Sertifikat_${namaPeserta}.pdf`, pdfBlob);
+  }
+
+  loadingDiv.textContent = "Menggabungkan file ke ZIP...";
+
+  zip.generateAsync({ type: "blob" }).then(function(content) {
+    const blobUrl = URL.createObjectURL(content);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = "Semua_Sertifikat.zip";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+
+    loadingDiv.textContent = "✅ Semua sertifikat berhasil diunduh!";
+    setTimeout(() => {
+      document.body.removeChild(loadingDiv);
+    }, 3000);
+  });
+}
+
   </script>
 </body>
 </html>
