@@ -809,12 +809,15 @@
         
         batchPromises.push(
           new Promise(async (resolve) => {
-           namaEl.textContent = current;
+           const sertifikat = document.getElementById("sertifikat");
+sertifikat.style.display = "block";
 
-// paksa browser refresh layout
-namaEl.offsetHeight;
+namaEl.textContent = current;
 
-// tunggu 2x repaint
+// Paksa layout reflow
+sertifikat.offsetHeight;
+
+// Tunggu repaint
 await new Promise((resolve) => {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
