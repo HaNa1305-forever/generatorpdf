@@ -809,23 +809,45 @@
         
         batchPromises.push(
           new Promise(async (resolve) => {
-           const sertifikat = document.getElementById("sertifikat");
-sertifikat.style.display = "block";
+           batchPromises.push(
+  new Promise(async (resolve) => {
+    document.getElementById("sertifikat").style.display = "block";
 
-namaEl.textContent = current;
+    namaEl.textContent = current;
 
-// Paksa layout reflow
-sertifikat.offsetHeight;
-
-// Tunggu repaint
-await new Promise((resolve) => {
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      resolve();
+    const sertifikat = document.getElementById("sertifikat");
+    sertifikat.offsetHeight;
+    await new Promise((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          resolve();
+        });
+      });
     });
-  });
-});
-            await new Promise(r => setTimeout(r, 100)); // Small delay
+
+    try {
+      const canvas = await html2canvas(sertifikat, {
+        scale: 2,
+        logging: false,
+        useCORS: true
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "px",
+        format: [1000, 700]
+      });
+
+      pdf.addImage(imgData, "PNG", 0, 0, 1000, 700);
+      folder.file(Certificate_${current}.pdf, pdf.output("blob"));
+      resolve();
+    } catch (error) {
+      console.error(Error generating certificate for ${current}:, error);
+      resolve();
+    }
+  })
+);
             
             try {
               const canvas = await html2canvas(document.getElementById("sertifikat"), { 
