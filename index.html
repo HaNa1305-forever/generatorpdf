@@ -810,6 +810,15 @@
         batchPromises.push(
           new Promise(async (resolve) => {
             namaEl.textContent = current;
+
+// TUNGGU render DOM biar nama kebaca html2canvas
+await new Promise((resolve) => {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      resolve();
+    });
+  });
+});
             await new Promise(r => setTimeout(r, 100)); // Small delay
             
             try {
